@@ -1,0 +1,11 @@
+{
+  "start_url": "https://example.com",
+  "crawl": {
+    "max_pages": 1,
+    "max_depth": 1,
+    "crawl_delay_ms": 0
+  },
+  "question": "Who is the CEO of Google?",
+  "expect_refusal": true,
+  "top_k": 3
+}

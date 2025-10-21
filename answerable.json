@@ -1,0 +1,11 @@
+{
+  "start_url": "https://example.com",
+  "crawl": {
+    "max_pages": 1,
+    "max_depth": 1,
+    "crawl_delay_ms": 0
+  },
+  "question": "What is example.com?",
+  "expected_phrase": "example domain",
+  "top_k": 3
+}
