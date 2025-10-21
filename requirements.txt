@@ -1,0 +1,11 @@
+fastapi==0.95.2
+uvicorn[standard]==0.22.0
+requests==2.31.0
+beautifulsoup4==4.12.2
+tldextract==3.4.0
+sentence-transformers==2.2.2
+scikit-learn==1.4.0
+transformers==4.40.0
+torch==2.2.0
+faiss-cpu==1.7.4  # optional; remove if your platform cannot install
+pytest==7.4.2

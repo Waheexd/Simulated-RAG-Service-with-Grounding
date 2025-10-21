@@ -1,38 +1,41 @@
-# Simulated-RAG-Service-with-Grounding
-🧠 Lightweight Retrieval-Augmented Generation (RAG) System
+# Retrieval-Augmented Generation (RAG) Service
 
-A minimal, fast, and reliable Retrieval-Augmented Generation (RAG) system built with FastAPI that crawls websites, extracts readable content, indexes it with embeddings, and answers questions strictly based on crawled data — ensuring hallucination-free responses.
+## Overview
 
-🚀 Overview
+A lightweight Retrieval-Augmented Generation (RAG) system that **crawls websites, extracts text, indexes it with embeddings, and answers questions strictly based on crawled content**.
+The system provides `/crawl`, `/index`, and `/ask` endpoints via a FastAPI API.
 
-Pipeline:
-Crawl → Clean → Chunk → Embed → Store → Retrieve → Generate Answer
+---
 
-🧩 Components
+## Architecture
 
-Crawl: Collects in-domain pages (respects robots.txt and crawl limits).
+**Pipeline:** Crawl → Clean → Chunk → Embed → Store → Retrieve → Generate Answer
 
-Clean: Extracts readable text and removes HTML boilerplate.
+* **Crawl:** Collects in-domain pages while respecting `robots.txt` and crawl limits.
+* **Clean:** Extracts readable text and removes HTML boilerplate.
+* **Chunk:** Splits text into ~800-character segments with 200-character overlap.
+* **Embed:** Generates text embeddings using `all-MiniLM-L6-v2`.
+* **Index:** Stores embeddings in FAISS (or scikit-learn) for similarity search.
+* **Ask:** Retrieves top-k relevant chunks and generates answers **only using that context**, with refusal for unanswerable questions.
 
-Chunk: Splits text into ~800-character segments with 200-character overlap.
+---
 
-Embed: Uses all-MiniLM-L6-v2 from sentence-transformers for embeddings.
+## Setup
 
-Index: Stores embeddings using FAISS (with scikit-learn fallback).
+### 1. Create Environment
 
-Ask: Retrieves top-k similar chunks and generates answers based only on retrieved context.
-
-⚙️ Setup
-1. Create Virtual Environment
+```bash
 python -m venv venv
 # Activate
 source venv/bin/activate        # mac/linux
 venv\Scripts\activate           # windows
+```
 
-2. Install Dependencies
+### 2. Install Dependencies
 
-Create a requirements.txt file with:
+Create `requirements.txt`:
 
+```text
 fastapi
 uvicorn[standard]
 requests
@@ -47,35 +50,47 @@ torch
 python-multipart
 pydantic
 pytest
+```
 
+Install with:
 
-Install them:
-
+```bash
 pip install -r requirements.txt
+```
 
-▶️ Run the API
+---
+
+## Run the API
+
+```bash
 uvicorn rag_service:app --reload --port 8000
+```
 
+Access the interactive documentation at:
+[http://127.0.0.1:8000/docs](http://127.0.0.1:8000/docs)
 
-Access Swagger docs: http://127.0.0.1:8000/docs
+---
 
-🧭 API Endpoints
-POST /crawl
+## API Endpoints
 
-Crawl a website (within same domain).
+### POST /crawl
 
-Request Example:
+Crawl a website within the same domain.
 
+**Request JSON Example:**
+
+```json
 {
   "start_url": "https://en.wikipedia.org/wiki/OpenAI",
   "max_pages": 5,
   "max_depth": 2,
   "crawl_delay_ms": 200
 }
+```
 
+**Response Example:**
 
-Response Example:
-
+```json
 {
   "page_count": 5,
   "skipped_count": 0,
@@ -85,34 +100,44 @@ Response Example:
   ],
   "ms": 1500
 }
+```
 
-POST /index
+---
 
-Embed and index crawled pages.
+### POST /index
 
-Request Example:
+Embeds and indexes crawled pages.
 
+**Request JSON Example:**
+
+```json
 { "chunk_size": 800, "chunk_overlap": 200 }
+```
 
+**Response Example:**
 
-Response Example:
-
+```json
 {
   "vector_count": 125,
   "index_time_ms": 3500
 }
+```
 
-POST /ask
+---
 
-Retrieve relevant content and generate grounded answers.
+### POST /ask
 
-Answerable Example:
+Retrieve relevant content and generate answers.
 
+**Answerable Question Example:**
+
+```json
 { "question": "Who founded OpenAI?", "top_k": 3, "refusal_threshold": 0.25 }
+```
 
+**Response Example:**
 
-Response Example:
-
+```json
 {
   "answer": "OpenAI was founded by Elon Musk, Sam Altman, Greg Brockman, Ilya Sutskever, John Schulman, and Wojciech Zaremba.",
   "sources": [
@@ -120,15 +145,17 @@ Response Example:
   ],
   "timings": { "retrieval_ms": 12, "generation_ms": 8, "total_ms": 20 }
 }
+```
 
+**Unanswerable Question Example:**
 
-Unanswerable Example:
-
+```json
 { "question": "Who invented a time machine in 1800?", "top_k": 3, "refusal_threshold": 0.25 }
+```
 
+**Response Example:**
 
-Response Example:
-
+```json
 {
   "answer": "not found in crawled content",
   "sources": [
@@ -136,36 +163,63 @@ Response Example:
   ],
   "timings": { "retrieval_ms": 10, "generation_ms": 0, "total_ms": 10 }
 }
+```
 
-🧪 Evaluation
+---
 
-Keep API running, then execute:
+## Evaluation
 
+### Run Example Evaluations
+
+Keep the API running and execute:
+
+```bash
 python eval_run.py
+```
 
+It runs **two evaluations**:
 
-This evaluates:
+* `answerable.json` → verifies correct answers are grounded in content
+* `unanswerable.json` → verifies refusal behavior when content is missing
 
-Answerable questions (evals/answerable.json)
+**Sample `answerable.json`:**
 
-Unanswerable questions (evals/unanswerable.json)
-
-✅ Sample answerable.json
+```json
 [
   { "question": "Who founded OpenAI?", "expected_answer": "Elon Musk, Sam Altman, Greg Brockman, Ilya Sutskever, John Schulman, Wojciech Zaremba" }
 ]
+```
 
-🚫 Sample unanswerable.json
+**Sample `unanswerable.json`:**
+
+```json
 [
   { "question": "Who invented a time machine in 1800?", "expected_answer": "not found in crawled content" }
 ]
+```
 
+### Run Sanity Tests
 
-Run unit tests:
-
+```bash
 pytest -q
+```
 
-🏗️ Folder Structure
+---
+
+## Design & Trade-offs
+
+* **Chunking:** 800-character chunks with 200-character overlap balance recall and precision.
+* **Embeddings:** `all-MiniLM-L6-v2` chosen for speed and open-source quality.
+* **Vector Index:** FAISS for fast similarity search, sklearn fallback for portability.
+* **Safety:** Answers only from retrieved content; ignores page instructions.
+* **Refusals:** Returns `"not found in crawled content"` for unanswerable queries.
+* **Observability:** Logs retrieval, generation, and total latency.
+
+---
+
+## Folder Structure
+
+```
 sde_intern_rag/
 ├── rag_service.py
 ├── requirements.txt
@@ -175,30 +229,13 @@ sde_intern_rag/
 └── evals/
     ├── answerable.json
     └── unanswerable.json
+```
+## Key Features
 
-💡 Design & Trade-offs
-Component	Decision	Reason
-Chunk Size	800 chars with 200 overlap	Balances recall & precision
-Embeddings	all-MiniLM-L6-v2	Compact, fast, open-source
-Vector Index	FAISS (sklearn fallback)	Optimized for speed & portability
-Answer Policy	Only from retrieved content	Ensures factual grounding
-Refusal Logic	"not found in crawled content"	Avoids hallucinations
-Observability	Logs retrieval & generation latency	Transparent performance tracking
-🌟 Key Features
+* Retrieval-grounded and hallucination-free answers
+* Fast vector search using FAISS
+* Compact and efficient MiniLM embeddings
+* Simple REST API with FastAPI
+* Fully testable through evaluation and unit tests
 
-✅ Retrieval-grounded & hallucination-free responses
 
-⚡ Fast vector search using FAISS
-
-🧠 Compact MiniLM embeddings
-
-🔌 Simple REST API via FastAPI
-
-🧍 Refusal mechanism for missing info
-
-🧾 Fully testable via evaluation scripts & pytest
-
-🧰 Tech Stack
-
-FastAPI, FAISS, SentenceTransformers, BeautifulSoup,
-PyTorch, Transformers, scikit-learn, NumPy
